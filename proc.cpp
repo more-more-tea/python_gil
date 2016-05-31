@@ -26,6 +26,7 @@ static PyObject *setCallback( PyObject *self, PyObject *args ) {
 
 static PyObject *onMsg( PyObject *self, PyObject *args ) {
     const char *msg;
+
     if ( PyArg_ParseTuple( args, "s", &msg ) ) {
         std::cerr << "[processor] " << msg << std::endl;
         snprintf( buf, BUF_SIZE, "%s", msg );
@@ -38,11 +39,15 @@ static PyObject *onMsg( PyObject *self, PyObject *args ) {
 
 static void *procThread( void *args ) {
     while ( 1 ) {
+        PyGILState_STATE gState = PyGILState_Ensure();
+
         if ( msgAvailable ) {
             std::cerr << "[processor thread] " << buf << std::endl;
             PyObject_CallFunction( callback, "ss", "[processor thread] Processed", buf );
             msgAvailable = 0;
         }
+
+        PyGILState_Release( gState );
     }
 
     return NULL;
@@ -52,8 +57,10 @@ static PyObject *start( PyObject *self, PyObject *args ) {
     pthread_t tid;
     pthread_create( &tid, NULL, procThread, NULL );
     std::cerr << "All created" << std::endl;
-    pthread_join( tid, NULL );
 
+    Py_BEGIN_ALLOW_THREADS
+    pthread_join( tid, NULL );
+    Py_END_ALLOW_THREADS
     std::cerr << "[WARNING] Code should not reach here." << std::endl;
 
     return Py_None;

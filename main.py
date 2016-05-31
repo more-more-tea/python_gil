@@ -1,6 +1,6 @@
 #!/bin/python
 
-import gevent
+import threading
 import logging
 # import zmq.green as zmq
 import zmq
@@ -35,7 +35,7 @@ def main():
     pub.start()
     proc.setCallback( callback )
 
-    gevent.spawn( setupMqAndReceive )
+    threading.Thread( target=setupMqAndReceive ).start()
     proc.start()
 
     '''
